@@ -2,6 +2,8 @@
 
 A Yii2 cache component that cascades through multiple cache drivers on failure, preventing app downtime due to cache outages.
 
+> **Note:** This is not a multi-store/write-through cache. Only one cache component is used at a time. This makes the most sense when using a fast, in-memory cache like `ArrayCache` as a fallback, to prevent your application from crashing while the primary cache (e.g., Redis) is unavailable or restabilizing.
+
 ## Installation
 
 ```bash
@@ -21,10 +23,6 @@ use craft\cachecascade\CacheFailedEvent;
         'class' => CascadeCache::class,
         'caches' => [
             'redisCache',
-            [
-                'class' => \yii\caching\FileCache::class,
-                'cachePath' => '@runtime/cache',
-            ],
             [
                 'class' => \yii\caching\ArrayCache::class,
             ],
