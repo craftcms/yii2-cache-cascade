@@ -13,9 +13,12 @@ composer require craftcms/yii2-cache-cascade
 Configure the cache component in your Yii2 application config:
 
 ```php
+use craft\cachecascade\CascadeCache;
+use craft\cachecascade\CacheFailedEvent;
+
 'components' => [
     'cache' => [
-        'class' => \craft\cachecascade\CascadeCache::class,
+        'class' => CascadeCache::class,
         'caches' => [
             'redisCache',
             [
@@ -26,6 +29,19 @@ Configure the cache component in your Yii2 application config:
                 'class' => \yii\caching\ArrayCache::class,
             ],
         ],
+        'on cacheFailed' => function (CacheFailedEvent $event) {
+            // Custom logging
+            Yii::error(
+                "Cache failover: {$event->operation} failed on " . get_class($event->cache) . ': ' . $event->exception->getMessage(),
+                'cache'
+            );
+
+            // Or send to external monitoring
+            // MyMonitoring::trackCacheFailure(get_class($event->cache), $event->exception);
+
+            // Optionally prevent cascading (will re-throw the exception)
+            // $event->shouldCascade = false;
+        },
     ],
     'redisCache' => [
         'class' => \yii\redis\Cache::class,
@@ -53,48 +69,7 @@ An array of cache components in priority order. Each element can be:
 
 ## Events
 
-The component triggers a `CascadeCache::EVENT_CACHE_FAILED` event when a cache operation fails. Use this for custom logging, monitoring, or to control cascade behavior:
-
-```php
-use craft\cachecascade\CascadeCache;
-use craft\cachecascade\CacheFailedEvent;
-
-'cache' => [
-    'class' => CascadeCache::class,
-    'caches' => [
-        [
-            'class' => \yii\redis\Cache::class,
-            'redis' => [
-                'hostname' => getenv('REDIS_HOST') ?: 'localhost',
-                'port' => 6379,
-                'connectionTimeout' => 1,
-                'dataTimeout' => 1,
-                'retries' => 1,
-                'retryInterval' => 0,
-            ],
-        ],
-        [
-            'class' => \yii\caching\FileCache::class,
-        ],
-        [
-            'class' => \yii\caching\ArrayCache::class,
-        ],
-    ],
-    'on cacheFailed' => function (CacheFailedEvent $event) {
-        // Custom logging
-        Yii::error(
-            "Cache failover: {$event->operation} failed on " . get_class($event->cache) . ': ' . $event->exception->getMessage(),
-            'cache'
-        );
-
-        // Or send to external monitoring
-        // MyMonitoring::trackCacheFailure(get_class($event->cache), $event->exception);
-
-        // Optionally prevent cascading (will re-throw the exception)
-        // $event->shouldCascade = false;
-    },
-],
-```
+The component triggers a `CascadeCache::EVENT_CACHE_FAILED` event when a cache operation fails (shown in the usage example above). Use this for custom logging, monitoring, or to control cascade behavior.
 
 ### `CacheFailedEvent` Properties
 
