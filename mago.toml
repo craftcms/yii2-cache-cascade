@@ -1,0 +1,10 @@
+[source]
+paths = ["src", "tests"]
+extensions = ["php"]
+
+[linter]
+integrations = ["phpunit"]
+
+[linter.rules]
+# Cache implementations and test classes legitimately have many methods
+too-many-methods = { threshold = 20 }

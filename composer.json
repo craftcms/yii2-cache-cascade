@@ -1,0 +1,37 @@
+{
+    "name": "craftcms/yii2-cache-cascade",
+    "description": "A Yii2 cache component that cascades through multiple cache drivers on failure",
+    "type": "yii2-extension",
+    "license": "MIT",
+    "keywords": [
+        "yii2",
+        "cache",
+        "cascade",
+        "fallback",
+        "resilience"
+    ],
+    "require": {
+        "php": ">=7.4",
+        "yiisoft/yii2": "^2.0.45"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5",
+        "yidas/yii2-composer-bower-skip": "^2.0",
+        "carthage-software/mago": "^1.1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "craft\\cachecascade\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "craft\\cachecascade\\tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "carthage-software/mago": true
+        }
+    }
+}
