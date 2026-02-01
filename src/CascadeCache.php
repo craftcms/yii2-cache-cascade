@@ -29,27 +29,12 @@ class CascadeCache extends Component implements CacheInterface
     public const EVENT_CACHE_FAILED = 'cacheFailed';
 
     /**
-     * @var array Array of cache component configurations, IDs, or instances.
-     * Listed in priority order (first = primary, last = final fallback).
-     *
-     * Each element can be:
-     * - A string: Component ID (e.g., 'redis', 'cache')
-     * - An array: Yii2 component configuration
-     * - An object: CacheInterface instance
-     *
-     * Example:
-     * ```php
-     * 'caches' => [
-     *     'redis',                                              // Component ID
-     *     ['class' => \yii\caching\FileCache::class],          // Configuration array
-     *     $myCacheInstance,                                     // Instance
-     * ]
-     * ```
+     * @var array Array of cache components/configs in priority order.
      */
     public array $caches = [];
 
     /**
-     * @var CacheInterface[]|null Resolved cache instances (lazy-loaded)
+     * @var CacheInterface[]|null
      */
     private ?array $_resolvedCaches = null;
 
@@ -96,14 +81,6 @@ class CascadeCache extends Component implements CacheInterface
         return $this->_resolvedCaches;
     }
 
-    /**
-     * Executes an operation across caches with cascade logic.
-     *
-     * @param string $operation Operation name for logging
-     * @param callable $callback Function to execute on each cache: fn(CacheInterface): mixed
-     * @param mixed $failureValue Value that indicates operation failure (triggers cascade)
-     * @return mixed The result from the first successful cache, or $failureValue if all fail
-     */
     protected function cascadeOperation(string $operation, callable $callback, mixed $failureValue = false): mixed
     {
         foreach ($this->getResolvedCaches() as $cache) {
