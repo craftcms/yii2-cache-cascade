@@ -6,8 +6,8 @@ declare(strict_types=1);
 namespace craft\cachecascade;
 
 use Yii;
+use yii\base\Component;
 use yii\base\InvalidConfigException;
-use yii\caching\Cache;
 use yii\caching\CacheInterface;
 use yii\di\Instance;
 
@@ -18,9 +18,13 @@ use yii\di\Instance;
  * this component is designed for resilience/failover - it writes to the first
  * available cache and cascades to the next only on failure.
  *
+ * This class implements CacheInterface directly (rather than extending Cache) because
+ * it delegates all operations to child caches. Each child cache handles its own key
+ * normalization, serialization, and dependency evaluation.
+ *
  * @property-read CacheInterface[] $resolvedCaches The resolved cache instances
  */
-class CascadeCache extends Cache
+class CascadeCache extends Component implements CacheInterface
 {
     /**
      * @event CacheFailedEvent Triggered when a cache operation fails.
@@ -106,7 +110,7 @@ class CascadeCache extends Cache
      * @param mixed $failureValue Value that indicates operation failure (triggers cascade)
      * @return mixed The result from the first successful cache, or $failureValue if all fail
      */
-    protected function cascadeOperation(string $operation, callable $callback, $failureValue = false)
+     protected function cascadeOperation(string $operation, callable $callback, mixed $failureValue = false): mixed
     {
         foreach ($this->getResolvedCaches() as $cache) {
             try {
@@ -134,14 +138,22 @@ class CascadeCache extends Cache
         return $failureValue;
     }
 
-    // -------------------------------------------------------------------------
-    // Public API overrides
-    // -------------------------------------------------------------------------
+     // -------------------------------------------------------------------------
+     // CacheInterface implementation
+     // -------------------------------------------------------------------------
 
-    /**
-     * @inheritdoc
-     */
-    public function get($key)
+     /**
+      * @inheritdoc
+      */
+     public function buildKey($key)
+     {
+         return $this->cascadeOperation('buildKey', static fn (CacheInterface $cache) => $cache->buildKey($key), $key);
+     }
+
+     /**
+      * @inheritdoc
+      */
+     public function get($key)
     {
         return $this->cascadeOperation('get', static fn (CacheInterface $cache) => $cache->get($key));
     }
@@ -218,48 +230,39 @@ class CascadeCache extends Cache
         return $this->cascadeOperation('getOrSet', static fn (CacheInterface $cache) => $cache->getOrSet($key, $callable, $duration, $dependency));
     }
 
-    // -------------------------------------------------------------------------
-    // Abstract method stubs (required by parent Cache class)
-    // These are not used since we override the public methods directly.
-    // -------------------------------------------------------------------------
+     // -------------------------------------------------------------------------
+     // ArrayAccess implementation
+     // -------------------------------------------------------------------------
 
-    /**
-     * @inheritdoc
-     */
-    protected function getValue($key)
-    {
-        return false;
-    }
+     /**
+      * @inheritdoc
+      */
+     public function offsetExists($key): bool
+     {
+         return $this->exists($key);
+     }
 
-    /**
-     * @inheritdoc
-     */
-    protected function setValue($key, $value, $duration): bool
-    {
-        return false;
-    }
+     /**
+      * @inheritdoc
+      */
+     public function offsetGet($key): mixed
+     {
+         return $this->get($key);
+     }
 
-    /**
-     * @inheritdoc
-     */
-    protected function addValue($key, $value, $duration): bool
-    {
-        return false;
-    }
+     /**
+      * @inheritdoc
+      */
+     public function offsetSet($key, $value): void
+     {
+         $this->set($key, $value);
+     }
 
-    /**
-     * @inheritdoc
-     */
-    protected function deleteValue($key): bool
-    {
-        return false;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    protected function flushValues(): bool
-    {
-        return false;
-    }
+     /**
+      * @inheritdoc
+      */
+     public function offsetUnset($key): void
+     {
+         $this->delete($key);
+     }
 }
