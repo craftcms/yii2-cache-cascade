@@ -110,7 +110,7 @@ class CascadeCache extends Component implements CacheInterface
      * @param mixed $failureValue Value that indicates operation failure (triggers cascade)
      * @return mixed The result from the first successful cache, or $failureValue if all fail
      */
-     protected function cascadeOperation(string $operation, callable $callback, mixed $failureValue = false): mixed
+    protected function cascadeOperation(string $operation, callable $callback, mixed $failureValue = false): mixed
     {
         foreach ($this->getResolvedCaches() as $cache) {
             try {
@@ -138,24 +138,24 @@ class CascadeCache extends Component implements CacheInterface
         return $failureValue;
     }
 
-     // -------------------------------------------------------------------------
-     // CacheInterface implementation
-     // -------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
+    // CacheInterface implementation
+    // -------------------------------------------------------------------------
 
-     /**
-      * @inheritdoc
-      */
-     public function buildKey($key)
-     {
-         return $this->cascadeOperation('buildKey', static fn (CacheInterface $cache) => $cache->buildKey($key), $key);
-     }
-
-     /**
-      * @inheritdoc
-      */
-     public function get($key)
+    /**
+     * @inheritdoc
+     */
+    public function buildKey($key)
     {
-        return $this->cascadeOperation('get', static fn (CacheInterface $cache) => $cache->get($key));
+        return $this->cascadeOperation('buildKey', static fn(CacheInterface $cache) => $cache->buildKey($key), $key);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function get($key)
+    {
+        return $this->cascadeOperation('get', static fn(CacheInterface $cache) => $cache->get($key));
     }
 
     /**
@@ -163,7 +163,7 @@ class CascadeCache extends Component implements CacheInterface
      */
     public function exists($key): bool
     {
-        return $this->cascadeOperation('exists', static fn (CacheInterface $cache) => $cache->exists($key), false);
+        return $this->cascadeOperation('exists', static fn(CacheInterface $cache) => $cache->exists($key), false);
     }
 
     /**
@@ -171,7 +171,7 @@ class CascadeCache extends Component implements CacheInterface
      */
     public function multiGet($keys): array
     {
-        return $this->cascadeOperation('multiGet', static fn (CacheInterface $cache) => $cache->multiGet($keys), []);
+        return $this->cascadeOperation('multiGet', static fn(CacheInterface $cache) => $cache->multiGet($keys), []);
     }
 
     /**
@@ -179,7 +179,7 @@ class CascadeCache extends Component implements CacheInterface
      */
     public function set($key, $value, $duration = null, $dependency = null): bool
     {
-        return $this->cascadeOperation('set', static fn (CacheInterface $cache) => $cache->set($key, $value, $duration, $dependency));
+        return $this->cascadeOperation('set', static fn(CacheInterface $cache) => $cache->set($key, $value, $duration, $dependency));
     }
 
     /**
@@ -187,7 +187,7 @@ class CascadeCache extends Component implements CacheInterface
      */
     public function multiSet($items, $duration = null, $dependency = null): array
     {
-        return $this->cascadeOperation('multiSet', static fn (CacheInterface $cache) => $cache->multiSet($items, $duration, $dependency), array_keys($items));
+        return $this->cascadeOperation('multiSet', static fn(CacheInterface $cache) => $cache->multiSet($items, $duration, $dependency), array_keys($items));
     }
 
     /**
@@ -195,7 +195,7 @@ class CascadeCache extends Component implements CacheInterface
      */
     public function add($key, $value, $duration = 0, $dependency = null): bool
     {
-        return $this->cascadeOperation('add', static fn (CacheInterface $cache) => $cache->add($key, $value, $duration, $dependency));
+        return $this->cascadeOperation('add', static fn(CacheInterface $cache) => $cache->add($key, $value, $duration, $dependency));
     }
 
     /**
@@ -203,7 +203,7 @@ class CascadeCache extends Component implements CacheInterface
      */
     public function multiAdd($items, $duration = 0, $dependency = null): array
     {
-        return $this->cascadeOperation('multiAdd', static fn (CacheInterface $cache) => $cache->multiAdd($items, $duration, $dependency), array_keys($items));
+        return $this->cascadeOperation('multiAdd', static fn(CacheInterface $cache) => $cache->multiAdd($items, $duration, $dependency), array_keys($items));
     }
 
     /**
@@ -211,7 +211,7 @@ class CascadeCache extends Component implements CacheInterface
      */
     public function delete($key): bool
     {
-        return $this->cascadeOperation('delete', static fn (CacheInterface $cache) => $cache->delete($key));
+        return $this->cascadeOperation('delete', static fn(CacheInterface $cache) => $cache->delete($key));
     }
 
     /**
@@ -219,7 +219,7 @@ class CascadeCache extends Component implements CacheInterface
      */
     public function flush(): bool
     {
-        return $this->cascadeOperation('flush', static fn (CacheInterface $cache) => $cache->flush());
+        return $this->cascadeOperation('flush', static fn(CacheInterface $cache) => $cache->flush());
     }
 
     /**
@@ -227,42 +227,42 @@ class CascadeCache extends Component implements CacheInterface
      */
     public function getOrSet($key, $callable, $duration = null, $dependency = null)
     {
-        return $this->cascadeOperation('getOrSet', static fn (CacheInterface $cache) => $cache->getOrSet($key, $callable, $duration, $dependency));
+        return $this->cascadeOperation('getOrSet', static fn(CacheInterface $cache) => $cache->getOrSet($key, $callable, $duration, $dependency));
     }
 
-     // -------------------------------------------------------------------------
-     // ArrayAccess implementation
-     // -------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
+    // ArrayAccess implementation
+    // -------------------------------------------------------------------------
 
-     /**
-      * @inheritdoc
-      */
-     public function offsetExists($key): bool
-     {
-         return $this->exists($key);
-     }
+    /**
+     * @inheritdoc
+     */
+    public function offsetExists($key): bool
+    {
+        return $this->exists($key);
+    }
 
-     /**
-      * @inheritdoc
-      */
-     public function offsetGet($key): mixed
-     {
-         return $this->get($key);
-     }
+    /**
+     * @inheritdoc
+     */
+    public function offsetGet($key): mixed
+    {
+        return $this->get($key);
+    }
 
-     /**
-      * @inheritdoc
-      */
-     public function offsetSet($key, $value): void
-     {
-         $this->set($key, $value);
-     }
+    /**
+     * @inheritdoc
+     */
+    public function offsetSet($key, $value): void
+    {
+        $this->set($key, $value);
+    }
 
-     /**
-      * @inheritdoc
-      */
-     public function offsetUnset($key): void
-     {
-         $this->delete($key);
-     }
+    /**
+     * @inheritdoc
+     */
+    public function offsetUnset($key): void
+    {
+        $this->delete($key);
+    }
 }
