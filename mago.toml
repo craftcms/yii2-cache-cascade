@@ -7,4 +7,4 @@ integrations = ["phpunit"]
 
 [linter.rules]
 # Cache implementations and test classes legitimately have many methods
-too-many-methods = { threshold = 20 }
+too-many-methods = { threshold = 35 }

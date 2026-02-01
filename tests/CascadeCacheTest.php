@@ -330,4 +330,207 @@ class CascadeCacheTest extends TestCase
 
         $cache->getResolvedCaches();
     }
+
+    public function testMultiAddOperation(): void
+    {
+        $primary = new ArrayCache();
+
+        $cache = new CascadeCache([
+            'caches' => [$primary],
+        ]);
+
+        $result = $cache->multiAdd([
+            'key1' => 'value1',
+            'key2' => 'value2',
+        ]);
+
+        static::assertEquals([], $result);
+        static::assertSame('value1', $primary->get('key1'));
+        static::assertSame('value2', $primary->get('key2'));
+
+        $result2 = $cache->multiAdd([
+            'key1' => 'new-value1',
+            'key3' => 'value3',
+        ]);
+
+        static::assertEquals(['key1'], $result2);
+        static::assertSame('value1', $primary->get('key1'));
+        static::assertSame('value3', $primary->get('key3'));
+    }
+
+    public function testBuildKeyOperation(): void
+    {
+        $primary = new ArrayCache();
+
+        $cache = new CascadeCache([
+            'caches' => [$primary],
+        ]);
+
+        $builtKey = $cache->buildKey('test-key');
+        static::assertIsString($builtKey);
+        static::assertSame($primary->buildKey('test-key'), $builtKey);
+    }
+
+    public function testThreeCacheCascadeChain(): void
+    {
+        $failing1 = $this->createMock(CacheInterface::class);
+        $failing1->method('get')->willThrowException(new \RuntimeException('Cache 1 failed'));
+
+        $failing2 = $this->createMock(CacheInterface::class);
+        $failing2->method('get')->willThrowException(new \RuntimeException('Cache 2 failed'));
+
+        $working = new ArrayCache();
+        $working->set('key', 'tertiary-value');
+
+        $cache = new CascadeCache([
+            'caches' => [$failing1, $failing2, $working],
+        ]);
+
+        static::assertSame('tertiary-value', $cache->get('key'));
+    }
+
+    public function testDeleteFallbackOnException(): void
+    {
+        $failing = $this->createMock(CacheInterface::class);
+        $failing->method('delete')->willThrowException(new \RuntimeException('Delete failed'));
+
+        $working = new ArrayCache();
+        $working->set('key', 'value');
+
+        $cache = new CascadeCache([
+            'caches' => [$failing, $working],
+        ]);
+
+        static::assertTrue($cache->delete('key'));
+        static::assertFalse($working->get('key'));
+    }
+
+    public function testFlushFallbackOnException(): void
+    {
+        $failing = $this->createMock(CacheInterface::class);
+        $failing->method('flush')->willThrowException(new \RuntimeException('Flush failed'));
+
+        $working = new ArrayCache();
+        $working->set('key', 'value');
+
+        $cache = new CascadeCache([
+            'caches' => [$failing, $working],
+        ]);
+
+        static::assertTrue($cache->flush());
+        static::assertFalse($working->get('key'));
+    }
+
+    public function testExistsFallbackOnException(): void
+    {
+        $failing = $this->createMock(CacheInterface::class);
+        $failing->method('exists')->willThrowException(new \RuntimeException('Exists failed'));
+
+        $working = new ArrayCache();
+        $working->set('key', 'value');
+
+        $cache = new CascadeCache([
+            'caches' => [$failing, $working],
+        ]);
+
+        static::assertTrue($cache->exists('key'));
+    }
+
+    public function testAddFallbackOnException(): void
+    {
+        $failing = $this->createMock(CacheInterface::class);
+        $failing->method('add')->willThrowException(new \RuntimeException('Add failed'));
+
+        $working = new ArrayCache();
+
+        $cache = new CascadeCache([
+            'caches' => [$failing, $working],
+        ]);
+
+        static::assertTrue($cache->add('key', 'value'));
+        static::assertSame('value', $working->get('key'));
+    }
+
+    public function testMultiGetFallbackOnException(): void
+    {
+        $failing = $this->createMock(CacheInterface::class);
+        $failing->method('multiGet')->willThrowException(new \RuntimeException('MultiGet failed'));
+
+        $working = new ArrayCache();
+        $working->set('key1', 'value1');
+        $working->set('key2', 'value2');
+
+        $cache = new CascadeCache([
+            'caches' => [$failing, $working],
+        ]);
+
+        $result = $cache->multiGet(['key1', 'key2']);
+        static::assertSame('value1', $result['key1']);
+        static::assertSame('value2', $result['key2']);
+    }
+
+    public function testMultiSetFallbackOnException(): void
+    {
+        $failing = $this->createMock(CacheInterface::class);
+        $failing->method('multiSet')->willThrowException(new \RuntimeException('MultiSet failed'));
+
+        $working = new ArrayCache();
+
+        $cache = new CascadeCache([
+            'caches' => [$failing, $working],
+        ]);
+
+        $result = $cache->multiSet(['key1' => 'value1', 'key2' => 'value2']);
+        static::assertEquals([], $result);
+        static::assertSame('value1', $working->get('key1'));
+        static::assertSame('value2', $working->get('key2'));
+    }
+
+    public function testMultiAddFallbackOnException(): void
+    {
+        $failing = $this->createMock(CacheInterface::class);
+        $failing->method('multiAdd')->willThrowException(new \RuntimeException('MultiAdd failed'));
+
+        $working = new ArrayCache();
+
+        $cache = new CascadeCache([
+            'caches' => [$failing, $working],
+        ]);
+
+        $result = $cache->multiAdd(['key1' => 'value1', 'key2' => 'value2']);
+        static::assertEquals([], $result);
+        static::assertSame('value1', $working->get('key1'));
+        static::assertSame('value2', $working->get('key2'));
+    }
+
+    public function testGetOrSetFallbackOnException(): void
+    {
+        $failing = $this->createMock(CacheInterface::class);
+        $failing->method('getOrSet')->willThrowException(new \RuntimeException('GetOrSet failed'));
+
+        $working = new ArrayCache();
+
+        $cache = new CascadeCache([
+            'caches' => [$failing, $working],
+        ]);
+
+        $result = $cache->getOrSet('key', static fn() => 'computed');
+        static::assertSame('computed', $result);
+    }
+
+    public function testArrayAccessInterface(): void
+    {
+        $primary = new ArrayCache();
+
+        $cache = new CascadeCache([
+            'caches' => [$primary],
+        ]);
+
+        $cache['key'] = 'value';
+        static::assertTrue(isset($cache['key']));
+        static::assertSame('value', $cache['key']);
+
+        unset($cache['key']);
+        static::assertFalse(isset($cache['key']));
+    }
 }
