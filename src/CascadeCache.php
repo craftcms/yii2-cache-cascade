@@ -73,8 +73,6 @@ class CascadeCache extends Component implements CacheInterface
     }
 
     /**
-     * Resolves all configured caches to CacheInterface instances.
-     *
      * @return CacheInterface[]
      * @throws InvalidConfigException if a cache cannot be resolved
      */
@@ -138,129 +136,91 @@ class CascadeCache extends Component implements CacheInterface
         return $failureValue;
     }
 
-    // -------------------------------------------------------------------------
-    // CacheInterface implementation
-    // -------------------------------------------------------------------------
-
-    /**
-     * @inheritdoc
-     */
+    /** @inheritdoc */
     public function buildKey($key)
     {
         return $this->cascadeOperation('buildKey', static fn(CacheInterface $cache) => $cache->buildKey($key), $key);
     }
 
-    /**
-     * @inheritdoc
-     */
+    /** @inheritdoc */
     public function get($key)
     {
         return $this->cascadeOperation('get', static fn(CacheInterface $cache) => $cache->get($key));
     }
 
-    /**
-     * @inheritdoc
-     */
+    /** @inheritdoc */
     public function exists($key): bool
     {
         return $this->cascadeOperation('exists', static fn(CacheInterface $cache) => $cache->exists($key), false);
     }
 
-    /**
-     * @inheritdoc
-     */
+    /** @inheritdoc */
     public function multiGet($keys): array
     {
         return $this->cascadeOperation('multiGet', static fn(CacheInterface $cache) => $cache->multiGet($keys), []);
     }
 
-    /**
-     * @inheritdoc
-     */
+    /** @inheritdoc */
     public function set($key, $value, $duration = null, $dependency = null): bool
     {
         return $this->cascadeOperation('set', static fn(CacheInterface $cache) => $cache->set($key, $value, $duration, $dependency));
     }
 
-    /**
-     * @inheritdoc
-     */
+    /** @inheritdoc */
     public function multiSet($items, $duration = null, $dependency = null): array
     {
         return $this->cascadeOperation('multiSet', static fn(CacheInterface $cache) => $cache->multiSet($items, $duration, $dependency), array_keys($items));
     }
 
-    /**
-     * @inheritdoc
-     */
+    /** @inheritdoc */
     public function add($key, $value, $duration = 0, $dependency = null): bool
     {
         return $this->cascadeOperation('add', static fn(CacheInterface $cache) => $cache->add($key, $value, $duration, $dependency));
     }
 
-    /**
-     * @inheritdoc
-     */
+    /** @inheritdoc */
     public function multiAdd($items, $duration = 0, $dependency = null): array
     {
         return $this->cascadeOperation('multiAdd', static fn(CacheInterface $cache) => $cache->multiAdd($items, $duration, $dependency), array_keys($items));
     }
 
-    /**
-     * @inheritdoc
-     */
+    /** @inheritdoc */
     public function delete($key): bool
     {
         return $this->cascadeOperation('delete', static fn(CacheInterface $cache) => $cache->delete($key));
     }
 
-    /**
-     * @inheritdoc
-     */
+    /** @inheritdoc */
     public function flush(): bool
     {
         return $this->cascadeOperation('flush', static fn(CacheInterface $cache) => $cache->flush());
     }
 
-    /**
-     * @inheritdoc
-     */
+    /** @inheritdoc */
     public function getOrSet($key, $callable, $duration = null, $dependency = null)
     {
         return $this->cascadeOperation('getOrSet', static fn(CacheInterface $cache) => $cache->getOrSet($key, $callable, $duration, $dependency));
     }
 
-    // -------------------------------------------------------------------------
-    // ArrayAccess implementation
-    // -------------------------------------------------------------------------
-
-    /**
-     * @inheritdoc
-     */
+    /** @inheritdoc */
     public function offsetExists($key): bool
     {
         return $this->exists($key);
     }
 
-    /**
-     * @inheritdoc
-     */
+    /** @inheritdoc */
     public function offsetGet($key): mixed
     {
         return $this->get($key);
     }
 
-    /**
-     * @inheritdoc
-     */
+    /** @inheritdoc */
     public function offsetSet($key, $value): void
     {
         $this->set($key, $value);
     }
 
-    /**
-     * @inheritdoc
-     */
+    /** @inheritdoc */
     public function offsetUnset($key): void
     {
         $this->delete($key);
