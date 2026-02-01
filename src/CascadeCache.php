@@ -18,11 +18,7 @@ use yii\di\Instance;
  * this component is designed for resilience/failover - it writes to the first
  * available cache and cascades to the next only on failure.
  *
- * This class implements CacheInterface directly (rather than extending Cache) because
- * it delegates all operations to child caches. Each child cache handles its own key
- * normalization, serialization, and dependency evaluation.
- *
- * @property-read CacheInterface[] $resolvedCaches The resolved cache instances
+ * @property-read CacheInterface[] $resolvedCaches
  */
 class CascadeCache extends Component implements CacheInterface
 {

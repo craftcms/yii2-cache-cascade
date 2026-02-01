@@ -35,6 +35,14 @@ vendor/bin/phpunit tests/CascadeCacheTest.php --filter testGetFromPrimaryCache  
 - Use `/** @inheritdoc */` for parent overrides
 - NEVER write redundant docs that repeat method/param names
 
+```php
+// WRONG - description repeats the name
+/** @var CacheInterface[] $caches The cache instances */
+
+// CORRECT - type is sufficient
+/** @var CacheInterface[] $caches */
+```
+
 ## Testing
 
 ### Mocking
