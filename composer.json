@@ -33,5 +33,10 @@
         "allow-plugins": {
             "carthage-software/mago": true
         }
+    },
+    "scripts": {
+        "lint": "mago lint",
+        "fix": "mago fix",
+        "test": "phpunit tests/"
     }
 }

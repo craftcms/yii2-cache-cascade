@@ -2,31 +2,77 @@
 
 ## Project
 
-Uses [Mago](https://github.com/carthage-software/mago/) for linting and static analysis.
+Yii2 PHP extension for cache failover. Namespace: `craft\cachecascade`
 
-## Global
+| Spec | Value |
+|------|-------|
+| PHP | >= 7.4 |
+| Framework | Yii2 ^2.0.45 |
+| Linter | [Mago](https://github.com/carthage-software/mago/) |
+| Tests | PHPUnit 9.5 |
 
-## General
+## Commands
 
-- Always RTFM first, before attempting debugging or workarounds. If you are unsure of a canonical documentation source, ask.
-- Check for available MCPs for any related tools or libraries. If you find any that aren't installed or enabled, prompt me.
-- Consider performance implications, but prioritize clarity and correctness first.
-- Search for and suggest existing libraries before implementing an overly complex solution to a common problem
+```bash
+composer install              # Install dependencies
+composer lint                 # Lint all
+composer fix                  # Auto-fix
+composer test                 # All tests
 
-## Code style
+# Granular
+vendor/bin/mago lint src/Foo.php  # Lint one file
+vendor/bin/phpunit tests/CascadeCacheTest.php  # One test file
+vendor/bin/phpunit tests/CascadeCacheTest.php --filter testGetFromPrimaryCache  # One method
+```
 
-- Prefer declarative, self-documenting code.
-- Use descriptive, verbose names that explain intent without requiring comments.
-- Use comments only for non-obvious business logic, workarounds, or references to external issues.
-- Include TODO comments with issue references when applicable: `// @TODO: replace with current spec`.
+## Code Rules
 
-## Tests
+- Strongly type whenever possible
+- Follow PSR
 
-- Write tests for any new functionality.
-- Always ensure tests pass after tasks are complete.
+### PHPDoc
 
-## Git
+- Use `/** @inheritdoc */` for parent overrides
+- NEVER write redundant docs that repeat method/param names
 
-- Only commit to prefixed branches, e.g. `agent/my-new-feature`.
-- Commit atomically as you iterate. Freely commit and push to any `agent/*` branches.
-- Fix linting and type errors before committing.
+## Testing
+
+### Mocking
+
+```php
+$mock = $this->createMock(CacheInterface::class);
+$mock->method('get')->willReturn('value');
+$mock->method('set')->willThrowException(new \RuntimeException('Failed'));
+```
+
+### Exceptions (expectException BEFORE triggering code)
+
+```php
+$this->expectException(InvalidConfigException::class);
+new CascadeCache(['caches' => []]);
+```
+
+## Error Handling
+
+- NEVER swallow exceptions. ALWAYS log or re-throw the exception.
+- When re-throwing exceptions, include the original exception.
+
+## Workflow
+
+### Before Committing
+
+1. `composer lint` - MUST pass
+2. `composer test` - MUST pass
+3. New functionality MUST have tests
+
+### Git
+
+- NEVER commit to `main`, `1.x`, or any canonical semver branches (x.x)
+
+### General
+
+- RTFM before debugging
+- Check for MCPs for tools/libraries
+- Prefer existing libraries over custom implementations
+- Comments ONLY for: non-obvious logic, workarounds, issue refs
+- TODO: `// @TODO: description (issue ref)`
