@@ -39,6 +39,15 @@ class CascadeCache extends Component implements CacheInterface
     private ?array $_resolvedCaches = null;
 
     /**
+     * Tracks the current cascade depth to prevent re-entrant amplification.
+     *
+     * When an inner cache (e.g. DbCache) triggers operations that resolve back
+     * to this CascadeCache (e.g. via Yii's schema cache), re-entrant calls
+     * short-circuit to the failure value instead of cascading again.
+     */
+    private int $_operationDepth = 0;
+
+    /**
      * @inheritdoc
      * @throws InvalidConfigException if no caches are configured
      */
@@ -83,30 +92,40 @@ class CascadeCache extends Component implements CacheInterface
 
     protected function cascadeOperation(string $operation, callable $callback, mixed $failureValue = false): mixed
     {
-        foreach ($this->getResolvedCaches() as $cache) {
-            try {
-                return $callback($cache);
-            } catch (\Throwable $exception) {
-                Yii::warning(
-                    "CascadeCache: {$operation} failed on " . get_class($cache) . ': ' . $exception->getMessage(),
-                    __METHOD__
-                );
-
-                $event = new CacheFailedEvent([
-                    'cache' => $cache,
-                    'operation' => $operation,
-                    'exception' => $exception,
-                ]);
-
-                $this->trigger(self::EVENT_CACHE_FAILED, $event);
-
-                if (!$event->shouldCascade) {
-                    throw $exception;
-                }
-            }
+        if ($this->_operationDepth > 0) {
+            return $failureValue;
         }
 
-        return $failureValue;
+        $this->_operationDepth++;
+
+        try {
+            foreach ($this->getResolvedCaches() as $cache) {
+                try {
+                    return $callback($cache);
+                } catch (\Throwable $exception) {
+                    Yii::warning(
+                        "CascadeCache: {$operation} failed on " . get_class($cache) . ': ' . $exception->getMessage(),
+                        __METHOD__
+                    );
+
+                    $event = new CacheFailedEvent([
+                        'cache' => $cache,
+                        'operation' => $operation,
+                        'exception' => $exception,
+                    ]);
+
+                    $this->trigger(self::EVENT_CACHE_FAILED, $event);
+
+                    if (!$event->shouldCascade) {
+                        throw $exception;
+                    }
+                }
+            }
+
+            return $failureValue;
+        } finally {
+            $this->_operationDepth--;
+        }
     }
 
     /** @inheritdoc */
