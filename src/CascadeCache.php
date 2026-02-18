@@ -38,14 +38,7 @@ class CascadeCache extends Component implements CacheInterface
      */
     private ?array $_resolvedCaches = null;
 
-    /**
-     * Tracks the current cascade depth to prevent re-entrant amplification.
-     *
-     * When an inner cache (e.g. DbCache) triggers operations that resolve back
-     * to this CascadeCache (e.g. via Yii's schema cache), re-entrant calls
-     * short-circuit to the failure value instead of cascading again.
-     */
-    private int $_operationDepth = 0;
+    private bool $_cascading = false;
 
     /**
      * @inheritdoc
@@ -92,11 +85,11 @@ class CascadeCache extends Component implements CacheInterface
 
     protected function cascadeOperation(string $operation, callable $callback, mixed $failureValue = false): mixed
     {
-        if ($this->_operationDepth > 0) {
+        if ($this->_cascading) {
             return $failureValue;
         }
 
-        $this->_operationDepth++;
+        $this->_cascading = true;
 
         try {
             foreach ($this->getResolvedCaches() as $cache) {
@@ -124,7 +117,7 @@ class CascadeCache extends Component implements CacheInterface
 
             return $failureValue;
         } finally {
-            $this->_operationDepth--;
+            $this->_cascading = false;
         }
     }
 
