@@ -22,8 +22,5 @@ class CacheFailedEvent extends Event
 
     public \Throwable $exception;
 
-    /**
-     * @var bool Set to `false` to stop cascading and re-throw the exception.
-     */
     public bool $shouldCascade = true;
 }
