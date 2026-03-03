@@ -6,8 +6,8 @@ declare(strict_types=1);
 namespace craft\cachecascade;
 
 use Yii;
-use yii\base\Component;
 use yii\base\InvalidConfigException;
+use yii\caching\Cache;
 use yii\caching\CacheInterface;
 use yii\di\Instance;
 
@@ -18,9 +18,13 @@ use yii\di\Instance;
  * this component is designed for resilience/failover - it writes to the first
  * available cache and cascades to the next only on failure.
  *
+ * Some Yii packages perform `instanceof yii\caching\Cache` checks rather than
+ * checking for `CacheInterface`. To maintain compatibility, CascadeCache extends
+ * `yii\caching\Cache`, which means we have to stub out some methods that never get called.
+ *
  * @property-read CacheInterface[] $resolvedCaches
  */
-class CascadeCache extends Component implements CacheInterface
+class CascadeCache extends Cache
 {
     /**
      * @event CacheFailedEvent Triggered when a cache operation fails.
@@ -209,5 +213,30 @@ class CascadeCache extends Component implements CacheInterface
     public function offsetUnset($key): void
     {
         $this->delete($key);
+    }
+
+    protected function getValue($key): mixed
+    {
+        throw new \BadMethodCallException('CascadeCache does not use getValue() - public methods delegate to underlying caches directly.');
+    }
+
+    protected function setValue($key, $value, $duration): bool
+    {
+        throw new \BadMethodCallException('CascadeCache does not use setValue() - public methods delegate to underlying caches directly.');
+    }
+
+    protected function addValue($key, $value, $duration): bool
+    {
+        throw new \BadMethodCallException('CascadeCache does not use addValue() - public methods delegate to underlying caches directly.');
+    }
+
+    protected function deleteValue($key): bool
+    {
+        throw new \BadMethodCallException('CascadeCache does not use deleteValue() - public methods delegate to underlying caches directly.');
+    }
+
+    protected function flushValues(): bool
+    {
+        throw new \BadMethodCallException('CascadeCache does not use flushValues() - public methods delegate to underlying caches directly.');
     }
 }
