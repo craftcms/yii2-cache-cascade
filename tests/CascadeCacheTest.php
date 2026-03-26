@@ -506,7 +506,8 @@ class CascadeCacheTest extends TestCase
     public function testGetOrSetFallbackOnException(): void
     {
         $failing = $this->createMock(CacheInterface::class);
-        $failing->method('getOrSet')->willThrowException(new \RuntimeException('GetOrSet failed'));
+        $failing->method('get')->willThrowException(new \RuntimeException('Get failed'));
+        $failing->method('set')->willThrowException(new \RuntimeException('Set failed'));
 
         $working = new ArrayCache();
 
@@ -516,6 +517,42 @@ class CascadeCacheTest extends TestCase
 
         $result = $cache->getOrSet('key', static fn() => 'computed');
         static::assertSame('computed', $result);
+    }
+
+    public function testGetOrSetCallableExceptionPropagates(): void
+    {
+        $cache = new CascadeCache([
+            'caches' => [new ArrayCache()],
+        ]);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Application error');
+
+        $cache->getOrSet('key', static function () {
+            throw new \RuntimeException('Application error');
+        });
+    }
+
+    public function testGetOrSetCallableRunsExactlyOnceOnCacheFallback(): void
+    {
+        $failing = $this->createMock(CacheInterface::class);
+        $failing->method('get')->willThrowException(new \RuntimeException('Get failed'));
+        $failing->method('set')->willThrowException(new \RuntimeException('Set failed'));
+
+        $working = new ArrayCache();
+
+        $cache = new CascadeCache([
+            'caches' => [$failing, $working],
+        ]);
+
+        $callCount = 0;
+        $result = $cache->getOrSet('key', static function () use (&$callCount) {
+            $callCount++;
+            return 'computed';
+        });
+
+        static::assertSame('computed', $result);
+        static::assertSame(1, $callCount, 'Callable should run exactly once regardless of cache failures');
     }
 
     public function testArrayAccessInterface(): void

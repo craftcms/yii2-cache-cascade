@@ -188,7 +188,19 @@ class CascadeCache extends Cache
     /** @inheritdoc */
     public function getOrSet($key, $callable, $duration = null, $dependency = null)
     {
-        return $this->cascadeOperation('getOrSet', static fn(CacheInterface $cache) => $cache->getOrSet($key, $callable, $duration, $dependency));
+        $value = $this->get($key);
+
+        if ($value !== false) {
+            return $value;
+        }
+
+        // Call outside cascadeOperation so callable exceptions propagate directly
+        // and the callable runs exactly once regardless of cache failures.
+        $value = call_user_func($callable, $this);
+
+        $this->set($key, $value, $duration, $dependency);
+
+        return $value;
     }
 
     /** @inheritdoc */
