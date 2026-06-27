@@ -38,9 +38,19 @@ class CascadeCache extends Cache
     public array $caches = [];
 
     /**
+     * @var int How many seconds to skip a cache after it throws an exception.
+     */
+    public int $cooldownDuration = 60;
+
+    /**
      * @var CacheInterface[]|null
      */
     private ?array $_resolvedCaches = null;
+
+    /**
+     * @var array<int, int>
+     */
+    private array $_cooldownExpirations = [];
 
     private bool $_cascading = false;
 
@@ -56,6 +66,10 @@ class CascadeCache extends Cache
             throw new InvalidConfigException(
                 'CascadeCache requires at least one cache to be configured in the "caches" property.'
             );
+        }
+
+        if ($this->cooldownDuration < 0) {
+            throw new InvalidConfigException('CascadeCache cooldownDuration must be greater than or equal to 0.');
         }
     }
 
@@ -96,7 +110,11 @@ class CascadeCache extends Cache
         $this->_cascading = true;
 
         try {
-            foreach ($this->getResolvedCaches() as $cache) {
+            foreach ($this->getResolvedCaches() as $index => $cache) {
+                if ($this->isCoolingDown($index)) {
+                    continue;
+                }
+
                 try {
                     return $callback($cache);
                 } catch (\Throwable $exception) {
@@ -116,6 +134,8 @@ class CascadeCache extends Cache
                     if (!$event->shouldCascade) {
                         throw $exception;
                     }
+
+                    $this->startCooldown($index);
                 }
             }
 
@@ -123,6 +143,35 @@ class CascadeCache extends Cache
         } finally {
             $this->_cascading = false;
         }
+    }
+
+    private function isCoolingDown(int $index): bool
+    {
+        if (!isset($this->_cooldownExpirations[$index])) {
+            return false;
+        }
+
+        if ($this->_cooldownExpirations[$index] > $this->currentTime()) {
+            return true;
+        }
+
+        unset($this->_cooldownExpirations[$index]);
+
+        return false;
+    }
+
+    private function startCooldown(int $index): void
+    {
+        if ($this->cooldownDuration === 0) {
+            return;
+        }
+
+        $this->_cooldownExpirations[$index] = $this->currentTime() + $this->cooldownDuration;
+    }
+
+    protected function currentTime(): int
+    {
+        return time();
     }
 
     /** @inheritdoc */
