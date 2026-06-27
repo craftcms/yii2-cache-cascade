@@ -99,8 +99,10 @@ class CascadeCacheCooldownTest extends TestCase
                 throw new \RuntimeException('Connection failed');
             });
 
-        $cache = new CascadeCache([
+        $cache = new TestableCascadeCache([
             'caches' => [$primary, $this->fallbackCache()],
+            'cooldownDuration' => 10,
+            'currentTime' => 100,
         ]);
 
         $cache->on(CascadeCache::EVENT_CACHE_FAILED, static function ($event) {
@@ -115,6 +117,8 @@ class CascadeCacheCooldownTest extends TestCase
         } catch (\RuntimeException $exception) {
             static::assertSame('Connection failed', $exception->getMessage());
         }
+
+        $cache->currentTime = 105;
 
         try {
             $cache->get('key');
