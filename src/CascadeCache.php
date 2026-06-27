@@ -40,7 +40,7 @@ class CascadeCache extends Cache
     /**
      * @var int How many seconds to skip a cache after it throws an exception.
      */
-    public int $cooldownDuration = 60;
+    public int $cooldownDuration = 0;
 
     /**
      * @var CacheInterface[]|null

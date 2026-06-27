@@ -74,7 +74,7 @@ class CascadeCacheCooldownTest extends TestCase
         static::assertSame(2, $primaryCalls);
     }
 
-    public function testZeroCooldownDurationPreservesOperationBasedRetries(): void
+    public function testDefaultCooldownDurationPreservesOperationBasedRetries(): void
     {
         $primary = $this->createMock(CacheInterface::class);
         $primary->expects($this->exactly(2))
@@ -83,7 +83,6 @@ class CascadeCacheCooldownTest extends TestCase
 
         $cache = new CascadeCache([
             'caches' => [$primary, $this->fallbackCache()],
-            'cooldownDuration' => 0,
         ]);
 
         static::assertSame('fallback-value', $cache->get('test-key'));
