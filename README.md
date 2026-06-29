@@ -27,6 +27,7 @@ use craft\cachecascade\CacheFailedEvent;
                 'class' => \yii\caching\ArrayCache::class,
             ],
         ],
+        'cooldownDuration' => 60,
         'on cacheFailed' => function (CacheFailedEvent $event) {
             // Custom logging
             Yii::error(
@@ -64,6 +65,12 @@ An array of cache components in priority order. Each element can be:
 - **String**: A component ID (e.g., `'redis'`, `'cache'`)
 - **Array**: A Yii2 component configuration
 - **Object**: A `CacheInterface` instance
+
+### `cooldownDuration`
+
+The number of seconds a failed cache should be skipped before it is retried. Defaults to `0`.
+
+The default retries failed caches on every operation, which matches the original operation-based cascade behavior. For normal web requests, setting this at or above the expected request duration effectively makes failover request-based because the failed cache will not be retried again during that request.
 
 ## Events
 
